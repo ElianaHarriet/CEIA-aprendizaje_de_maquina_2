@@ -2,6 +2,15 @@
 ### MLOps1 - CEIA - FIUBA
 Estructura de servicios para la implementación del proyecto final de MLOps1 - CEIA - FIUBA
 
+## Integrantes del grupo
+
+| Padrón | Nombre | GitHub |
+|--------|--------|--------|
+| a2217 | Eliana Harriet | [@ElianaHarriet](https://github.com/ElianaHarriet) |
+| a2219 | Alejandro López Bayona | — |
+| a2329 | Pablo Santiago Rodríguez Castro | — |
+| a2416 | Damian Nicolas Smilovich | — |
+
 Supongamos que trabajamos para **ML Models and something more Inc.**, la cual ofrece un servicio que proporciona modelos mediante una REST API. Internamente, tanto para realizar tareas de DataOps como de MLOps, la empresa cuenta con varios servicios que ayudan a ejecutar las acciones necesarias. También dispone de un Data Lake en S3, para este caso, simularemos un S3 utilizando MinIO.
 
 Para simular esta empresa, utilizaremos Docker y, a través de Docker Compose, desplegaremos varios contenedores que representan distintos servicios en un entorno productivo.
@@ -25,6 +34,12 @@ y las siguientes bases de datos:
 
 - `mlflow_db` (usada por MLflow).
 - `airflow` (usada por Airflow).
+
+## Modelo base (AMq1)
+
+El modelo a implementar fue desarrollado como trabajo práctico final de **Aprendizaje de Máquina I**. Se trata de un clasificador binario que predice si un usuario calificará una película con 4 o más estrellas, usando el dataset [MovieLens 25M](https://grouplens.org/datasets/movielens/25m/).
+
+El notebook original y la documentación de autoría se encuentran en la carpeta [`modelo/`](./modelo/).
 
 ## Tarea a realizar
 
