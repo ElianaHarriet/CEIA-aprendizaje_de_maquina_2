@@ -157,3 +157,13 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .DS_store
+
+# Editor
+.vscode/
+
+# MLflow local runs (generados al correr train.py localmente)
+mlruns/
+
+# Datos generados (splits, predicciones)
+output/
+*.npy

@@ -1,0 +1,45 @@
+[project]
+name = "ceia-amq2"
+version = "0.1.0"
+description = "Proyecto final MLOps — CEIA FIUBA"
+requires-python = ">=3.11"
+dependencies = [
+    "xgboost>=2.0",
+    "optuna>=3.5",
+    "mlflow>=2.12",
+    "scikit-learn>=1.4",
+    "numpy>=1.26",
+    "pandas>=2.2",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.11",
+    "ipykernel>=6.29",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [
+    ".git",
+    "__pycache__",
+    "aprendizaje_maquina_II",  # submódulo externo
+    "notebook_example",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (manejado por formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
