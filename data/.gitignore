@@ -1,0 +1,4 @@
+# Archivos del dataset — no se trackean en git
+*
+!.gitkeep
+!.gitignore
