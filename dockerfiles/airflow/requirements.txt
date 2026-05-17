@@ -1,2 +1,7 @@
 mlflow[extras]~=2.10
 boto3~=1.34
+numpy>=1.26
+optuna>=3.5
+pandas>=2.2
+scikit-learn>=1.4
+xgboost>=2.0
