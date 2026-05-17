@@ -67,13 +67,23 @@ Además se cuenta con una implementación ejemplo de predicción en bache con un
 5. En la carpeta raíz de este repositorio, ejecuta:
 
 ```bash
+docker compose build airflow-apiserver postgres mlflow fastapi
+```
+
+## Ejecución
+
+1. En la carpeta raíz de este repositorio, ejecuta:
+
+```bash
 docker compose --profile all up
 ```
 
-6. Una vez que todos los servicios estén funcionando (verifica con el comando `docker ps -a` que todos los servicios estén healthy o revisa en Docker Desktop), podrás acceder a los diferentes servicios mediante:
-   - Apache Airflow: http://localhost:8080
+Opcionalmente agregar `-d` para correr en background.
+
+2. Una vez que todos los servicios estén funcionando (verifica con el comando `docker ps -a` que todos los servicios estén healthy o revisa en Docker Desktop), podrás acceder a los diferentes servicios mediante:
+   - Apache Airflow: http://localhost:8080 (user: airflow, pass: airflow)
    - MLflow: http://localhost:5001
-   - MinIO: http://localhost:9001 (ventana de administración de Buckets)
+   - MinIO: http://localhost:9001 (user: minio, pass: minio123)
    - API: http://localhost:8800/
    - Documentación de la API: http://localhost:8800/docs
 

@@ -1,5 +1,5 @@
 """
-movielens_data.py — Feature engineering y utilidades para el dataset MovieLens 25M.
+movielens_data.py - Feature engineering y utils para el dataset MovieLens 25M.
 
 Reconstruido a partir del TP final de Aprendizaje de Máquina I (CEIA - FIUBA).
 Autores originales: Jose Miguel Silva Pavón, Pablo Santiago Rodríguez Castro,
@@ -267,7 +267,7 @@ class MovieLensDataset:
 
 
 # ------------------------------------------------------------------
-# Funciones de utilidad (usadas en el notebook)
+# Funciones de utilidad
 # ------------------------------------------------------------------
 
 

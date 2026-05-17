@@ -1,5 +1,5 @@
 """
-train.py — Entrenamiento del modelo XGBoost con búsqueda de hiperparámetros
+train.py - Entrenamiento del modelo XGBoost con búsqueda de hiperparámetros
            via Optuna y tracking en MLflow.
 
 Lee los splits generados por etl.py, ejecuta la búsqueda de hiperparámetros,
@@ -121,13 +121,13 @@ def train_and_log(
     mlflow.set_experiment(experiment_name)
 
     with mlflow.start_run(run_name="xgboost-optuna"):
-        # — Búsqueda de hiperparámetros —
+        # Búsqueda de hiperparámetros
         best_params = optimize_hyperparams(X_train, y_train, n_trials)
         mlflow.log_params(best_params)
         mlflow.log_param("n_trials", n_trials)
         mlflow.log_param("random_state", RANDOM_STATE)
 
-        # — Entrenamiento del modelo final —
+        # Entrenamiento del modelo final
         log.info("Entrenando modelo final con mejores parámetros...")
         model = xgb.XGBClassifier(
             **best_params,
@@ -137,19 +137,19 @@ def train_and_log(
         )
         model.fit(X_train, y_train)
 
-        # — Calibración con Platt scaling —
+        # Calibración con Platt scaling
         log.info("Calibrando modelo (Platt scaling)...")
         calibrated = CalibratedClassifierCV(model, method="sigmoid", cv=3)
         calibrated.fit(X_train, y_train)
 
-        # — Evaluación —
+        # Evaluación
         y_pred = calibrated.predict(X_test)
         y_proba = calibrated.predict_proba(X_test)[:, 1]
         metrics = compute_metrics(y_test, y_pred, y_proba)
         mlflow.log_metrics(metrics)
         log.info("Métricas en test: %s", metrics)
 
-        # — Registro del modelo —
+        # Registro del modelo
         signature = mlflow.models.infer_signature(X_train, calibrated.predict(X_train))
         mlflow.sklearn.log_model(
             calibrated,

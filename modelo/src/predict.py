@@ -1,5 +1,5 @@
 """
-predict.py — Inferencia sobre el modelo registrado en MLflow.
+predict.py - Inferencia sobre el modelo registrado en MLflow.
 
 Carga el modelo desde MLflow (por nombre y versión/stage) y realiza
 predicciones sobre un array de features o un archivo .npy.

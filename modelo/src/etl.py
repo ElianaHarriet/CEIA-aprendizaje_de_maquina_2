@@ -1,5 +1,5 @@
 """
-etl.py — Descarga y preprocesamiento del dataset MovieLens 25M.
+etl.py - Descarga y preprocesamiento del dataset MovieLens 25M.
 
 Descarga el dataset si no existe, construye la matriz de features usando
 MovieLensDataset y guarda los splits train/test listos para el entrenamiento.
@@ -52,7 +52,7 @@ def download_dataset(data_path: Path) -> None:
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(data_path.parent)
 
-    # grouplens extrae en ml-25m/ — movemos los archivos a data_path
+    # grouplens extrae en ml-25m/, movemos los archivos a data_path
     extracted = data_path.parent / "ml-25m"
     if extracted.exists():
         data_path.mkdir(parents=True, exist_ok=True)

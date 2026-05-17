@@ -4,7 +4,7 @@ Este directorio contiene el trabajo práctico final desarrollado en la materia *
 
 ## Descripción del modelo
 
-El modelo aborda una tarea de **clasificación binaria**: predecir si un usuario calificará una película con 4 o más estrellas (`rating >= 4.0 → 1`) utilizando el dataset [MovieLens 25M](https://grouplens.org/datasets/movielens/25m/).
+El modelo aborda una tarea de **clasificación binaria**: predecir si un usuario calificará una película con 4 o más estrellas (`rating >= 4.0 -> 1`) utilizando el dataset [MovieLens 25M](https://grouplens.org/datasets/movielens/25m/).
 
 Las features utilizadas incluyen información de contenido de la película, perfil de comportamiento del usuario y señales del tag genome.
 

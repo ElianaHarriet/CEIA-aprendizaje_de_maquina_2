@@ -1,5 +1,5 @@
 """
-etl_movielens.py — DAG de ETL para el dataset MovieLens 25M.
+etl_movielens.py - DAG de ETL para el dataset MovieLens 25M.
 
 Descarga el dataset desde GroupLens y lo transforma en splits train/test
 listos para entrenamiento. Cada task es una etapa independiente que lee
@@ -11,17 +11,17 @@ y escribe en MinIO (S3), lo que permite:
 Flujo de datos:
     download_data()
         └─ s3://data/raw/{ratings,movies,genome-scores}.csv
-                ↓
+                v
     sample_and_save_ratings()
         └─ s3://data/interim/ratings_sampled.csv
-                ↓ (estas dos pueden correr en paralelo en el futuro)
+                v (estas dos pueden correr en paralelo en el futuro)
     compute_movie_features()          compute_genome_pca()
         └─ s3://data/interim/             └─ s3://data/interim/
            movie_features.csv                genome_pca.csv
-                ↓                                 ↓
+                v                                 v
     compute_user_features()
         └─ s3://data/interim/user_features.csv
-                ↓
+                v
     merge_and_split()
         └─ s3://data/final/{X_train,X_test,y_train,y_test}.npy
            s3://data/final/feature_names.txt
@@ -32,19 +32,19 @@ import datetime
 from airflow.decorators import dag, task
 
 markdown_text = """
-### ETL Pipeline — MovieLens 25M
+### ETL Pipeline - MovieLens 25M
 
 Descarga el dataset MovieLens 25M desde GroupLens y construye 50 features
 organizadas en etapas independientes. Cada etapa persiste su output en MinIO,
 permitiendo reintentos granulares y futura paralelización.
 
 **Etapas:**
-1. `download_data` — Descarga ml-25m.zip y sube CSVs crudos a `s3://data/raw/`
-2. `sample_and_save_ratings` — Samplea usuarios/ratings y guarda en `s3://data/interim/`
-3. `compute_movie_features` — Stats por película + géneros + año → `s3://data/interim/`
-4. `compute_genome_pca` — PCA de 1200 genome tags → 20 componentes → `s3://data/interim/`
-5. `compute_user_features` — Stats por usuario → `s3://data/interim/`
-6. `merge_and_split` — Merge, interacciones, escala y split → `s3://data/final/`
+1. `download_data` - Descarga ml-25m.zip y sube CSVs crudos a `s3://data/raw/`
+2. `sample_and_save_ratings` - Samplea usuarios/ratings y guarda en `s3://data/interim/`
+3. `compute_movie_features` - Stats por película + géneros + año -> `s3://data/interim/`
+4. `compute_genome_pca` - PCA de 1200 genome tags -> 20 componentes -> `s3://data/interim/`
+5. `compute_user_features` - Stats por usuario -> `s3://data/interim/`
+6. `merge_and_split` - Merge, interacciones, escala y split -> `s3://data/final/`
 
 **Output final:** X_train.npy, X_test.npy, y_train.npy, y_test.npy, feature_names.txt
 """
@@ -81,7 +81,7 @@ def etl_movielens():
         Pasos:
             1. Descarga ml-25m.zip (~250 MB) desde files.grouplens.org.
             2. Extrae el contenido en /tmp/movielens/. GroupLens extrae en
-               una subcarpeta ml-25m/ — la aplanamos un nivel arriba.
+               una subcarpeta ml-25m/ - la aplanamos un nivel arriba.
             3. Sube ratings.csv, movies.csv y genome-scores.csv a s3://data/raw/
                usando awswrangler, que usa las variables AWS_* del docker-compose
                para conectarse a MinIO en vez de AWS S3 real.
@@ -122,7 +122,7 @@ def etl_movielens():
         # 3. Subir CSVs a MinIO
         for filename in REQUIRED_FILES:
             s3_path = f"s3://data/raw/{filename}"
-            print(f"Subiendo {filename} → {s3_path} ...")
+            print(f"Subiendo {filename} -> {s3_path} ...")
             df = pd.read_csv(TMP_DIR / filename)
             wr.s3.to_csv(df=df, path=s3_path, index=False)
             print(f"  {len(df):,} filas subidas.")
@@ -142,7 +142,7 @@ def etl_movielens():
         Samplea un subconjunto de usuarios y ratings y lo persiste en MinIO.
             ratings.csv es el CSV más grande (~650 MB). Samplearlo una vez y
             guardarlo en S3 evita que las tasks siguientes lo descarguen completo
-            y repitan el mismo sampleo — cada una trabajaría sobre el mismo
+            y repitan el mismo sampleo - cada una trabajaría sobre el mismo
             subconjunto reproducible.
 
         Estrategia de sampleo:
@@ -193,7 +193,7 @@ def etl_movielens():
         Lee ratings sampleados y movies.csv para construir:
             movie_avg_rating      : promedio de rating de la película.
             movie_rating_count_log: log(1 + n_ratings). El log aplana la distribución
-                                    sesgada — blockbusters con millones de ratings vs
+                                    sesgada - blockbusters con millones de ratings vs
                                     películas de nicho con decenas.
             movie_rating_std      : desvío estándar. Alta std = película polarizante.
             year                  : año extraído del título con regex.
@@ -232,7 +232,7 @@ def etl_movielens():
         )
         stats["movie_rating_count_log"] = np.log1p(stats["movie_rating_count"])
 
-        # Año extraído del título: "Toy Story (1995)" → 1995
+        # Año extraído del título: "Toy Story (1995)" -> 1995
         movies = movies.copy()
         movies["year"] = movies["title"].str.extract(r"\((\d{4})\)$").astype(float)
         movies["year"] = movies["year"].fillna(movies["year"].median())
@@ -258,11 +258,11 @@ def etl_movielens():
         Reduce la matriz de genome tags a 20 componentes via PCA.
 
         genome-scores.csv tiene ~1200 tags por película con relevancia entre 0 y 1.
-        La matriz resultante es densa: ~13.000 películas × 1.200 tags.
+        La matriz resultante es densa: ~13.000 películas * 1.200 tags.
 
         PCA comprime esa información en N_GENOME_COMPONENTS componentes ortogonales
         que capturan la mayor parte de la varianza (en la práctica >80%). Esto:
-            - Reduce la dimensionalidad de 1200 → 20 features.
+            - Reduce la dimensionalidad de 1200 a 20 features.
             - Elimina redundancia entre tags correlacionados.
             - Preserva la información semántica sobre el "estilo" de cada película.
 
@@ -288,7 +288,7 @@ def etl_movielens():
             .pivot(index="movieId", columns="tagId", values="relevance")
             .fillna(0)
         )
-        print(f"Matriz genome: {pivot.shape[0]:,} películas × {pivot.shape[1]:,} tags")
+        print(f"Matriz genome: {pivot.shape[0]:,} películas * {pivot.shape[1]:,} tags")
 
         pca = PCA(n_components=N_GENOME_COMPONENTS, random_state=RANDOM_STATE)
         components = pca.fit_transform(pivot.values)
@@ -423,7 +423,7 @@ def etl_movielens():
 
             numpy.save() necesita un file-like object. Como S3 no es un filesystem,
             usamos io.BytesIO en RAM como intermediario:
-                array → np.save() → BytesIO → boto3.put_object() → S3
+                array -> np.save() -> BytesIO -> boto3.put_object() -> S3
             """
             buffer = io.BytesIO()
             np.save(buffer, arr)
@@ -463,7 +463,7 @@ def etl_movielens():
 
         # 4. Definir columnas finales y target binario
         # Target: 1 si rating >= 4.0 ("le gustó"), 0 si no.
-        # Transforma regresión → clasificación binaria.
+        # Transforma regresión -> clasificación binaria.
         genome_cols = [f"genome_pca_{i}" for i in range(N_GENOME_COMPONENTS)]
         feature_cols = (
             GENRES
@@ -483,7 +483,7 @@ def etl_movielens():
         # 5. Split estratificado y escalado
         # IMPORTANTE: fit() del scaler solo sobre train para evitar data leakage.
         # Si fitteáramos sobre todo el dataset, la media y std del test contaminarían
-        # el modelo — estaría "viendo el futuro" durante el entrenamiento.
+        # el modelo - estaría "viendo el futuro" durante el entrenamiento.
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
         )
@@ -507,7 +507,7 @@ def etl_movielens():
         )
         print("Splits guardados exitosamente en MinIO.")
 
-    # Encadenamiento secuencial — cada task espera a que la anterior termine exitosamente.
+    # Encadenamiento secuencial - cada task espera a que la anterior termine exitosamente.
     # compute_movie_features y compute_genome_pca podrían correrse en paralelo en el futuro
     # cambiando: [compute_movie_features(), compute_genome_pca()] >> compute_user_features()
     (
