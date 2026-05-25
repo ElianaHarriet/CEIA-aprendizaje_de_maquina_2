@@ -29,7 +29,19 @@ Flujo de datos:
 
 import datetime
 
+
 from airflow.decorators import dag, task
+from airflow.models import Variable
+
+
+# S3/MinIO credentials and endpoint are now read from environment variables (set in docker-compose)
+import os
+
+aws_env = {
+    "AWS_ACCESS_KEY_ID": os.environ.get("AWS_ACCESS_KEY_ID", "minio"),
+    "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY", "minio123"),
+    "AWS_ENDPOINT_URL": os.environ.get("AWS_ENDPOINT_URL", "http://minio:9000"),
+}
 
 markdown_text = """
 ### ETL Pipeline - MovieLens 25M
@@ -91,6 +103,7 @@ def etl_movielens():
             Con CeleryExecutor las tasks pueden correr en workers distintos.
             S3 es el único storage compartido entre todos los workers.
         """
+
         import shutil
         import urllib.request
         import zipfile
@@ -98,39 +111,66 @@ def etl_movielens():
 
         import awswrangler as wr
         import pandas as pd
+        from airflow.models import Variable
+        import traceback
 
         DATA_URL = "https://files.grouplens.org/datasets/movielens/ml-25m.zip"
-        TMP_DIR = Path("/tmp/movielens")
-        ZIP_PATH = Path("/tmp/ml-25m.zip")
-        REQUIRED_FILES = ["ratings.csv", "movies.csv", "genome-scores.csv"]
+        try:
+            # Elimina defaults hardcodeados: obliga a definir las variables en Airflow
+            TMP_DIR = Path(Variable.get("TMP_DIR"))
+            ZIP_PATH = Path(Variable.get("ZIP_PATH"))
+            RAW_PREFIX = Variable.get("RAW_PREFIX")
+            REQUIRED_FILES = ["ratings.csv", "movies.csv", "genome-scores.csv"]
 
-        # 1. Descarga
-        print(f"Descargando dataset desde {DATA_URL} ...")
-        urllib.request.urlretrieve(DATA_URL, ZIP_PATH)
-        print("Descarga completada.")
+            # 1. Descarga
+            print(f"[download_data] Asegurando directorio: {ZIP_PATH.parent}")
+            ZIP_PATH.parent.mkdir(parents=True, exist_ok=True)
+            print(f"[download_data] Descargando dataset desde {DATA_URL} ...")
+            urllib.request.urlretrieve(DATA_URL, ZIP_PATH)
+            print("[download_data] Descarga completada.")
 
-        # 2. Extracción y aplanado de subcarpeta
-        TMP_DIR.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(ZIP_PATH, "r") as zf:
-            zf.extractall(TMP_DIR)
-        extracted_subdir = TMP_DIR / "ml-25m"
-        if extracted_subdir.exists():
-            for f in extracted_subdir.iterdir():
-                shutil.move(str(f), str(TMP_DIR / f.name))
-            extracted_subdir.rmdir()
+            # 2. Extracción y aplanado de subcarpeta
+            print(f"[download_data] Asegurando TMP_DIR: {TMP_DIR}")
+            TMP_DIR.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(ZIP_PATH, "r") as zf:
+                zf.extractall(TMP_DIR)
+            extracted_subdir = TMP_DIR / "ml-25m"
+            if extracted_subdir.exists():
+                for f in extracted_subdir.iterdir():
+                    shutil.move(str(f), str(TMP_DIR / f.name))
+                extracted_subdir.rmdir()
 
-        # 3. Subir CSVs a MinIO
-        for filename in REQUIRED_FILES:
-            s3_path = f"s3://data/raw/{filename}"
-            print(f"Subiendo {filename} -> {s3_path} ...")
-            df = pd.read_csv(TMP_DIR / filename)
-            wr.s3.to_csv(df=df, path=s3_path, index=False)
-            print(f"  {len(df):,} filas subidas.")
 
-        # 4. Limpieza
-        shutil.rmtree(TMP_DIR)
-        ZIP_PATH.unlink(missing_ok=True)
-        print("Descarga y subida a MinIO completadas.")
+            # 3. Subir CSVs a MinIO con logging granular
+            for filename in REQUIRED_FILES:
+                s3_path = f"s3://{RAW_PREFIX}/{filename}"
+                print(f"[download_data] Subiendo {filename} -> {s3_path} ...")
+                try:
+                    df = pd.read_csv(TMP_DIR / filename)
+                    print(f"[download_data]   DataFrame shape: {df.shape}")
+                    print(f"[download_data]   Intentando subir a MinIO/S3 con wr.s3.to_csv...")
+                    wr.s3.to_csv(df=df, path=s3_path, index=False)
+                    print(f"[download_data]   {len(df):,} filas subidas exitosamente a {s3_path}.")
+                except Exception as upload_exc:
+                    print(f"[download_data] ERROR subiendo {filename} a {s3_path}:")
+                    print(traceback.format_exc())
+                    raise
+
+            # 4. Limpieza
+            shutil.rmtree(TMP_DIR)
+            ZIP_PATH.unlink(missing_ok=True)
+            print("[download_data] Descarga y subida a MinIO completadas.")
+            print("[download_data] FINAL: Tarea completada exitosamente.")
+        except Exception as e:
+            print("[download_data] ERROR: Exception atrapada en download_data:")
+            print(traceback.format_exc())
+            raise
+        # Suprimir ReferenceError de awswrangler/botocore en cleanup
+        try:
+            import gc
+            gc.collect()
+        except ReferenceError:
+            print("[download_data] ReferenceError suprimido durante cleanup final.")
 
     @task.virtualenv(
         task_id="sample_and_save_ratings",
@@ -157,12 +197,16 @@ def etl_movielens():
         import awswrangler as wr
         import numpy as np
 
-        RANDOM_STATE = 42
-        N_USERS = 20_000
-        N_RATINGS = 1_000_000
 
-        print("Leyendo ratings.csv desde s3://data/raw/ ...")
-        ratings = wr.s3.read_csv("s3://data/raw/ratings.csv")
+
+        from airflow.models import Variable
+        RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
+        N_USERS = int(Variable.get("N_USERS", default_var=20000))
+        N_RATINGS = int(Variable.get("N_RATINGS", default_var=1000000))
+        RAW_PREFIX = Variable.get("RAW_PREFIX", default_var="data/raw")
+
+        print(f"Leyendo ratings.csv desde s3://{RAW_PREFIX}/ ...")
+        ratings = wr.s3.read_csv(f"s3://{RAW_PREFIX}/ratings.csv")
         print(f"  Total ratings crudos: {len(ratings):,}")
 
         rng = np.random.default_rng(RANDOM_STATE)
@@ -178,8 +222,10 @@ def etl_movielens():
         ratings = ratings.reset_index(drop=True)
         print(f"  Ratings tras sampleo: {len(ratings):,} de {len(all_users):,} usuarios únicos")
 
-        wr.s3.to_csv(df=ratings, path="s3://data/interim/ratings_sampled.csv", index=False)
-        print("ratings_sampled.csv guardado en s3://data/interim/")
+
+        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
+        wr.s3.to_csv(df=ratings, path=f"s3://{INTERIM_PREFIX}/ratings_sampled.csv", index=False)
+        print(f"ratings_sampled.csv guardado en s3://{INTERIM_PREFIX}/")
 
     @task.virtualenv(
         task_id="compute_movie_features",
@@ -209,16 +255,20 @@ def etl_movielens():
         import awswrangler as wr
         import numpy as np
 
+
         GENRES = [
             "Action", "Adventure", "Animation", "Children", "Comedy", "Crime",
             "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror", "IMAX",
             "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War",
             "Western", "(no genres listed)",
         ]
+        from airflow.models import Variable
+        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
+        RAW_PREFIX = Variable.get("RAW_PREFIX", default_var="data/raw")
 
         print("Leyendo datos desde MinIO ...")
-        ratings = wr.s3.read_csv("s3://data/interim/ratings_sampled.csv")
-        movies = wr.s3.read_csv("s3://data/raw/movies.csv")
+        ratings = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/ratings_sampled.csv")
+        movies = wr.s3.read_csv(f"s3://{RAW_PREFIX}/movies.csv")
 
         # Stats por película calculadas sobre el subconjunto sampleado
         stats = (
@@ -245,7 +295,8 @@ def etl_movielens():
             ["movie_avg_rating", "movie_rating_count_log", "movie_rating_std"]
         ].join(movies.set_index("movieId")[["year"] + GENRES], how="left")
 
-        wr.s3.to_csv(df=movie_feats.reset_index(), path="s3://data/interim/movie_features.csv", index=False)
+
+        wr.s3.to_csv(df=movie_feats.reset_index(), path=f"s3://{INTERIM_PREFIX}/movie_features.csv", index=False)
         print(f"movie_features.csv guardado: {len(movie_feats):,} películas, {movie_feats.shape[1]} columnas.")
 
     @task.virtualenv(
@@ -276,11 +327,18 @@ def etl_movielens():
         import awswrangler as wr
         from sklearn.decomposition import PCA
 
-        RANDOM_STATE = 42
-        N_GENOME_COMPONENTS = 20
+
+        from airflow.models import Variable
+        RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
+        N_GENOME_COMPONENTS = int(Variable.get("N_GENOME_COMPONENTS", default_var=20))
+
+
+        from airflow.models import Variable
+        RAW_PREFIX = Variable.get("RAW_PREFIX", default_var="data/raw")
+        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
 
         print("Leyendo genome-scores.csv desde MinIO ...")
-        genome_scores = wr.s3.read_csv("s3://data/raw/genome-scores.csv")
+        genome_scores = wr.s3.read_csv(f"s3://{RAW_PREFIX}/genome-scores.csv")
 
         # Pivot: filas = películas, columnas = tagIds, valores = relevancia
         pivot = (
@@ -299,9 +357,10 @@ def etl_movielens():
         import pandas as pd
         genome_pca_df = pd.DataFrame(components, index=pivot.index, columns=cols)
 
+
         wr.s3.to_csv(
             df=genome_pca_df.reset_index(),
-            path="s3://data/interim/genome_pca.csv",
+            path=f"s3://{INTERIM_PREFIX}/genome_pca.csv",
             index=False,
         )
         print(f"genome_pca.csv guardado: {len(genome_pca_df):,} películas, {N_GENOME_COMPONENTS} componentes.")
@@ -330,8 +389,11 @@ def etl_movielens():
         import awswrangler as wr
         import numpy as np
 
+
+        from airflow.models import Variable
+        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
         print("Leyendo ratings sampleados desde MinIO ...")
-        ratings = wr.s3.read_csv("s3://data/interim/ratings_sampled.csv")
+        ratings = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/ratings_sampled.csv")
 
         global_mean = ratings["rating"].mean()
         print(f"  Promedio global de ratings: {global_mean:.3f}")
@@ -355,9 +417,10 @@ def etl_movielens():
             "user_rating_std",
         ]]
 
+
         wr.s3.to_csv(
             df=user_feats.reset_index(),
-            path="s3://data/interim/user_features.csv",
+            path=f"s3://{INTERIM_PREFIX}/user_features.csv",
             index=False,
         )
         print(f"user_features.csv guardado: {len(user_feats):,} usuarios.")
@@ -407,9 +470,10 @@ def etl_movielens():
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
 
-        RANDOM_STATE = 42
-        TEST_SIZE = 0.2
-        N_GENOME_COMPONENTS = 20
+        from airflow.models import Variable
+        RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
+        TEST_SIZE = float(Variable.get("TEST_SIZE", default_var=0.2))
+        N_GENOME_COMPONENTS = int(Variable.get("N_GENOME_COMPONENTS", default_var=20))
         GENRES = [
             "Action", "Adventure", "Animation", "Children", "Comedy", "Crime",
             "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror", "IMAX",
@@ -431,11 +495,15 @@ def etl_movielens():
             boto3.client("s3").put_object(Bucket=bucket, Key=key, Body=buffer.getvalue())
 
         # 1. Leer todos los artefactos intermedios desde MinIO
-        print("Leyendo artefactos desde s3://data/interim/ ...")
-        ratings = wr.s3.read_csv("s3://data/interim/ratings_sampled.csv")
-        movie_feats = wr.s3.read_csv("s3://data/interim/movie_features.csv").set_index("movieId")
-        genome_pca = wr.s3.read_csv("s3://data/interim/genome_pca.csv").set_index("movieId")
-        user_feats = wr.s3.read_csv("s3://data/interim/user_features.csv").set_index("userId")
+
+        from airflow.models import Variable
+        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
+        FINAL_PREFIX = Variable.get("FINAL_PREFIX", default_var="data/final")
+        print(f"Leyendo artefactos desde s3://{INTERIM_PREFIX}/ ...")
+        ratings = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/ratings_sampled.csv")
+        movie_feats = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/movie_features.csv").set_index("movieId")
+        genome_pca = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/genome_pca.csv").set_index("movieId")
+        user_feats = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/user_features.csv").set_index("userId")
 
         # 2. Merge: cada fila combina un rating con features de su película y usuario
         df = ratings[["userId", "movieId", "rating"]].copy()
@@ -493,16 +561,17 @@ def etl_movielens():
         print(f"Train: {X_train.shape}  Test: {X_test.shape}")
 
         # 6. Subir splits a MinIO
-        print("Subiendo splits a s3://data/final/ ...")
-        save_numpy_to_s3(X_train, "data", "final/X_train.npy")
-        save_numpy_to_s3(X_test,  "data", "final/X_test.npy")
-        save_numpy_to_s3(y_train, "data", "final/y_train.npy")
-        save_numpy_to_s3(y_test,  "data", "final/y_test.npy")
+
+        print(f"Subiendo splits a s3://{FINAL_PREFIX}/ ...")
+        save_numpy_to_s3(X_train, "data", f"{FINAL_PREFIX}/X_train.npy")
+        save_numpy_to_s3(X_test,  "data", f"{FINAL_PREFIX}/X_test.npy")
+        save_numpy_to_s3(y_train, "data", f"{FINAL_PREFIX}/y_train.npy")
+        save_numpy_to_s3(y_test,  "data", f"{FINAL_PREFIX}/y_test.npy")
 
         # feature_names.txt permite al DAG de entrenamiento loguear los nombres en MLflow
         boto3.client("s3").put_object(
             Bucket="data",
-            Key="final/feature_names.txt",
+            Key=f"{FINAL_PREFIX}/feature_names.txt",
             Body="\n".join(feature_cols).encode(),
         )
         print("Splits guardados exitosamente en MinIO.")
