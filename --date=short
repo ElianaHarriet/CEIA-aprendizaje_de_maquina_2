@@ -1,0 +1,298 @@
+[33mcommit a27980d5c58b81b1c871c3ab9fc79b03f53803aa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/pulir-readme[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Damian Smilovich <damian.smilovich@gmail.com>
+Date:   Sun May 31 13:39:50 2026 -0300
+
+    Pule el readme, extra parte a GUIDELINES.md, agrega changelog y todo (vacios por ahora)
+
+[33mcommit d6958ebdb13dd42df5dd017b68f2d78b05436837[m
+Merge: c5bb9d1 abbb8b5
+Author: EliHarriet <85852434+ElianaHarriet@users.noreply.github.com>
+Date:   Mon May 25 13:44:57 2026 -0300
+
+    Merge pull request #3 from ElianaHarriet/refactor/parametrize-airflow-paths
+    
+    Refactor/parametrize airflow paths
+
+[33mcommit abbb8b51895fa5ee6fd09e96377969ecbea8c038[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 24 22:51:15 2026 -0300
+
+    Elimina archivos YAML legacy de variables y conexiones
+
+[33mcommit 8a22c0f0bc25f2739853e3ab82595c638306a960[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 24 22:51:11 2026 -0300
+
+    Agrega variables y conexiones en formato JSON compatible con Airflow
+
+[33mcommit 39135b37bd6bcc10ddd1732fae280f6458e02afb[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 24 22:51:07 2026 -0300
+
+    Elimina backend legacy y automatiza importación de variables/conexiones
+
+[33mcommit 0825e4b04fcdf55a10106b3aed527bf26ecd5f6a[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 24 22:51:03 2026 -0300
+
+    Parametriza rutas y constantes en DAGs eliminando hardcodeos
+
+[33mcommit c5bb9d10603b5cc21a6a2a69a341d6b5ba903bd0[m
+Author: Damian Smilovich <damian.smilovich@gmail.com>
+Date:   Mon May 18 18:07:58 2026 -0300
+
+    Agrega tran_movienels.py con un dag para entrenar el modelo
+
+[33mcommit 035645914baafe7e88c269545bc899c2f4489915[m
+Author: Damian Smilovich <damian.smilovich@gmail.com>
+Date:   Sun May 17 20:27:22 2026 -0300
+
+    Agrega dag dummy (wip) para entrenar el modelo, ajusta requerimientos para construir la imagen de airflow
+
+[33mcommit 265e91952133663fa2c63745612f37fd4ad43fc8[m
+Author: Damian Smilovich <damian.smilovich@gmail.com>
+Date:   Sun May 17 19:41:50 2026 -0300
+
+    Pule README.md y algunos comentarios
+
+[33mcommit 831cf31bf4b86408662e12048b0be04830849f2f[m
+Author: Pablo Santiago Rodriguez Castro <pablosantiagorodriguezcastro@Pablos-MacBook-Pro.local>
+Date:   Sat May 16 19:25:34 2026 -0300
+
+    feat: agrego primer boceto de dag para etl
+
+[33mcommit c0252f27a246a32850e4fdbc914852581de6516f[m
+Merge: 0b6c32f 41d731c
+Author: EliHarriet <85852434+ElianaHarriet@users.noreply.github.com>
+Date:   Sun May 10 19:27:17 2026 -0300
+
+    Merge pull request #2 from ElianaHarriet/add/refactor-modelo
+    
+    Primeras steps en el pipeline ML para clasificación de ratings MovieLens 25M
+
+[33mcommit 41d731cda150459fd3eda37828bbb091dfbf3d5b[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 10 19:21:31 2026 -0300
+
+    chore: actualizar .gitignore y agregar estructura data/
+
+[33mcommit d1d2c8a2dcd42b3f1c2306bf106b4cde2811f9b5[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 10 19:21:04 2026 -0300
+
+    chore: configurar proyecto con uv y ruff
+
+[33mcommit cfa2e28f8420fa28f86f0f9fd8b809e5c174c96d[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 10 19:20:31 2026 -0300
+
+    add: scripts de pipeline ML (ETL, features, entrenamiento, predicción)
+
+[33mcommit 0b6c32fd0c98775d86a918387736960ef39b06ec[m
+Merge: 4c088b5 91542b8
+Author: EliHarriet <85852434+ElianaHarriet@users.noreply.github.com>
+Date:   Sun May 10 17:54:19 2026 -0300
+
+    Merge pull request #1 from ElianaHarriet/add/modelo-amq1
+    
+    Modelo base AMq1 e integrantes del grupo
+
+[33mcommit 91542b89fcb36e68377981d29a56376e1631437f[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 10 17:43:30 2026 -0300
+
+    add: carpeta modelo/ con notebook AMq1 y documentación de autoría
+
+[33mcommit f14f9c02b479b6c5f1655071210aa453c28ce5f7[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 10 17:43:30 2026 -0300
+
+    docs: agregar tabla de integrantes del grupo en README
+
+[33mcommit 4c088b5a24495b5d242fadb8d31c9498b8fdc422[m
+Author: ElianaHarriet <eharriet@fi.uba.ar>
+Date:   Sun May 10 17:27:16 2026 -0300
+
+    Add aprendizaje_maquina_II as submodule
+
+[33mcommit d86351d0a12e92e0e3a7b631c35563f65782a982[m
+Author: Facundo Adrián Lucianna <42851813+facundolucianna@users.noreply.github.com>
+Date:   Sat May 2 10:33:34 2026 -0300
+
+    chore: optimize docker-compose resources by limiting workers and concurrency (#10)
+
+[33mcommit c8e7263302d07ba8f7c73a79260dd2918625bed8[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Thu Oct 23 22:23:31 2025 -0300
+
+    Add MLFLOW_SERVER_DISABLE_SECURITY_MIDDLEWARE environment variable
+
+[33mcommit 5fc62497ef111ff7851a6a3b53e008fe497919df[m
+Author: Facundo Adrián Lucianna <42851813+facundolucianna@users.noreply.github.com>
+Date:   Sun Jul 13 04:28:20 2025 -0300
+
+    Feature/new airflow version (#6)
+    
+    * improved postgress dockerfile
+    
+    * improved airflow dockerfile
+    
+    * improved fastapi dockerfile
+    
+    * improved mlflow dockerfile
+    
+    * new docker-compose file
+    
+    * new readme
+    
+    * fixed image
+
+[33mcommit 1759551be7dc59595ff0ec32ec467ffafc5f72cd[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Sat May 31 17:30:35 2025 -0300
+
+    fixed deprecation on newer version of mc
+
+[33mcommit dd4f6da4a4ac036f7cc7a3e51a7185228e738b80[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Sat May 31 09:11:02 2025 -0300
+
+    fixed minio stuff
+
+[33mcommit 25a12667e29827f72472d766cda459f0cc03930c[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Tue Mar 4 12:13:41 2025 -0300
+
+    Rebranding 2
+
+[33mcommit 594c404564d63783c60f2c0d01e22f2d823cea88[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Mon Mar 3 23:04:55 2025 -0300
+
+    Rebranding
+
+[33mcommit 4e5a9af12c517436ccf9a055119915844838471f[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Sat Aug 10 15:08:45 2024 -0300
+
+    New configurations
+
+[33mcommit 0f06317d9d7e052d4de3a9f8db5fdb023b76d714[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Sat Aug 10 15:08:34 2024 -0300
+
+    New way to create the mlflow db
+
+[33mcommit 20b7fe640d46bdf1396df3991f706e7ce95b831f[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Thu Jun 6 09:47:23 2024 -0300
+
+    Added git in airflow image
+
+[33mcommit 476079aa05ae050b12b7e93b604d4129e306cc1d[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Tue Feb 20 17:15:26 2024 -0300
+
+    New image 3
+
+[33mcommit 7efef009da3c09f9d5808f3db8f66aa3fb682b58[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Tue Feb 20 17:11:40 2024 -0300
+
+    New image bis
+
+[33mcommit ddaaf8074b168e73adcca543cf5da6c78cc99558[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Tue Feb 20 17:10:30 2024 -0300
+
+    New image
+
+[33mcommit 0f71cb3873538f586dfa82f53f050010663284d4[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Tue Feb 20 14:35:42 2024 -0300
+
+    Added image (cherry-pick)
+
+[33mcommit a1363016b34c2cd5cd1fa061c9987b90c898c3fb[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Tue Feb 20 14:34:47 2024 -0300
+
+    New Readme (cherry-pick)
+
+[33mcommit ccaecfd1a00e22591eebbe88a2324ac0180d1ac2[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Mon Feb 19 23:05:21 2024 -0300
+
+    Fixed .env (cherry-pick)
+
+[33mcommit e80c811f53eb613c3c21c2cd01752af97257b17d[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Mon Feb 19 22:29:58 2024 -0300
+
+    Fixed docker-compose.yaml (cherry-pick plz)
+
+[33mcommit dcf977b3093bce8f0aa4598d6440115e664e5874[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Sun Feb 18 17:24:00 2024 -0300
+
+    Create backend-api service (cherry-pick plz)
+
+[33mcommit a9aa719853390bdc495a55c44674202816356a7f[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 23:18:55 2024 -0300
+
+    changes in docker-compose (cherry pick, plz)
+
+[33mcommit e1ccb0eedb93ca1f82e3b911f0e1d1d2b129852e[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 21:24:59 2024 -0300
+
+    changes in dockerfile in airflow (cherry pick, plz)
+
+[33mcommit 7cdd4e7f6ab3ce38b9ed2acf71ef5343f5de93b1[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 20:51:53 2024 -0300
+
+    Deleted garbage
+
+[33mcommit c7e33ad9e7965566056ab59bf9e7a90e2886e131[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 18:27:57 2024 -0300
+
+    Fixed environment variables and added secrets
+
+[33mcommit 4225b4928b894ab1d0fea4462254a9e6d92e6c2c[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 11:04:37 2024 -0300
+
+    Change delete all
+
+[33mcommit 4062b43f9c8ab7d4c2d4831f6bac4719cdea00e2[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 11:03:23 2024 -0300
+
+    Added enviroment variable: airfow_gid
+
+[33mcommit 662f912cd8bdaf8af5a732042810f01af27a706d[m
+Author: facundolucianna <facundolucianna@gmail.com>
+Date:   Wed Feb 14 10:56:10 2024 -0300
+
+    Fixed default values
+
+[33mcommit 5767fd20e09c1f8b3388b1b5a83dae4a71206141[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Tue Feb 13 17:17:16 2024 -0300
+
+    Enabled test connection in airflow
+
+[33mcommit b8daaa70469f275d4b6108d70c02df58858ad8f8[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Mon Feb 12 23:31:40 2024 -0300
+
+    Created the basics interaction
+
+[33mcommit 75677fdbf0dfe868cffaa3c289eb7222be5c7a98[m
+Author: Facundo Adrián Lucianna <facundolucianna@gmail.com>
+Date:   Sun Feb 11 12:12:10 2024 -0300
+
+    Initial commit
