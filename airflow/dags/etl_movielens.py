@@ -31,17 +31,6 @@ import datetime
 
 
 from airflow.decorators import dag, task
-from airflow.models import Variable
-
-
-# S3/MinIO credentials and endpoint are now read from environment variables (set in docker-compose)
-import os
-
-aws_env = {
-    "AWS_ACCESS_KEY_ID": os.environ.get("AWS_ACCESS_KEY_ID", "minio"),
-    "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY", "minio123"),
-    "AWS_ENDPOINT_URL": os.environ.get("AWS_ENDPOINT_URL", "http://minio:9000"),
-}
 
 markdown_text = """
 ### ETL Pipeline - MovieLens 25M
@@ -64,10 +53,8 @@ permitiendo reintentos granulares y futura paralelización.
 default_args = {
     "owner": "CEIA - FIUBA",
     "depends_on_past": False,
-    "schedule_interval": None,
     "retries": 1,
     "retry_delay": datetime.timedelta(minutes=5),
-    "dagrun_timeout": datetime.timedelta(minutes=90),
 }
 
 
@@ -77,6 +64,8 @@ default_args = {
     doc_md=markdown_text,
     tags=["ETL", "MovieLens"],
     default_args=default_args,
+    schedule=None,
+    dagrun_timeout=datetime.timedelta(minutes=90),
     catchup=False,
 )
 def etl_movielens():
@@ -105,6 +94,7 @@ def etl_movielens():
         """
 
         import shutil
+        import os
         import urllib.request
         import zipfile
         from pathlib import Path
@@ -116,6 +106,13 @@ def etl_movielens():
 
         DATA_URL = "https://files.grouplens.org/datasets/movielens/ml-25m.zip"
         try:
+            endpoint_url = (
+                os.environ.get("AWS_ENDPOINT_URL")
+                or os.environ.get("AWS_ENDPOINT_URL_S3")
+                or "http://s3:9000"
+            )
+            os.environ["AWS_ENDPOINT_URL"] = endpoint_url
+
             # Elimina defaults hardcodeados: obliga a definir las variables en Airflow
             TMP_DIR = Path(Variable.get("TMP_DIR"))
             ZIP_PATH = Path(Variable.get("ZIP_PATH"))
@@ -196,10 +193,16 @@ def etl_movielens():
         """
         import awswrangler as wr
         import numpy as np
-
+        import os
 
 
         from airflow.models import Variable
+        endpoint_url = (
+            os.environ.get("AWS_ENDPOINT_URL")
+            or os.environ.get("AWS_ENDPOINT_URL_S3")
+            or "http://s3:9000"
+        )
+        os.environ["AWS_ENDPOINT_URL"] = endpoint_url
         RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
         N_USERS = int(Variable.get("N_USERS", default_var=20000))
         N_RATINGS = int(Variable.get("N_RATINGS", default_var=1000000))
@@ -254,6 +257,7 @@ def etl_movielens():
         """
         import awswrangler as wr
         import numpy as np
+        import os
 
 
         GENRES = [
@@ -263,6 +267,12 @@ def etl_movielens():
             "Western", "(no genres listed)",
         ]
         from airflow.models import Variable
+        endpoint_url = (
+            os.environ.get("AWS_ENDPOINT_URL")
+            or os.environ.get("AWS_ENDPOINT_URL_S3")
+            or "http://s3:9000"
+        )
+        os.environ["AWS_ENDPOINT_URL"] = endpoint_url
         INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
         RAW_PREFIX = Variable.get("RAW_PREFIX", default_var="data/raw")
 
@@ -325,10 +335,17 @@ def etl_movielens():
         Output: s3://data/interim/genome_pca.csv
         """
         import awswrangler as wr
+        import os
         from sklearn.decomposition import PCA
 
 
         from airflow.models import Variable
+        endpoint_url = (
+            os.environ.get("AWS_ENDPOINT_URL")
+            or os.environ.get("AWS_ENDPOINT_URL_S3")
+            or "http://s3:9000"
+        )
+        os.environ["AWS_ENDPOINT_URL"] = endpoint_url
         RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
         N_GENOME_COMPONENTS = int(Variable.get("N_GENOME_COMPONENTS", default_var=20))
 
@@ -388,9 +405,16 @@ def etl_movielens():
         """
         import awswrangler as wr
         import numpy as np
+        import os
 
 
         from airflow.models import Variable
+        endpoint_url = (
+            os.environ.get("AWS_ENDPOINT_URL")
+            or os.environ.get("AWS_ENDPOINT_URL_S3")
+            or "http://s3:9000"
+        )
+        os.environ["AWS_ENDPOINT_URL"] = endpoint_url
         INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
         print("Leyendo ratings sampleados desde MinIO ...")
         ratings = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/ratings_sampled.csv")
@@ -462,18 +486,25 @@ def etl_movielens():
         Output: s3://data/final/{X_train,X_test,y_train,y_test}.npy + feature_names.txt
         """
         import io
+        import os
 
         import awswrangler as wr
         import boto3
         import numpy as np
-        import pandas as pd
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
 
         from airflow.models import Variable
+        endpoint_url = (
+            os.environ.get("AWS_ENDPOINT_URL")
+            or os.environ.get("AWS_ENDPOINT_URL_S3")
+            or "http://s3:9000"
+        )
+        os.environ["AWS_ENDPOINT_URL"] = endpoint_url
         RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
         TEST_SIZE = float(Variable.get("TEST_SIZE", default_var=0.2))
         N_GENOME_COMPONENTS = int(Variable.get("N_GENOME_COMPONENTS", default_var=20))
+        DATA_BUCKET = Variable.get("DATA_BUCKET", default_var="data")
         GENRES = [
             "Action", "Adventure", "Animation", "Children", "Comedy", "Crime",
             "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror", "IMAX",
@@ -492,13 +523,17 @@ def etl_movielens():
             buffer = io.BytesIO()
             np.save(buffer, arr)
             buffer.seek(0)
-            boto3.client("s3").put_object(Bucket=bucket, Key=key, Body=buffer.getvalue())
+            boto3.client("s3", endpoint_url=endpoint_url).put_object(
+                Bucket=bucket,
+                Key=key,
+                Body=buffer.getvalue(),
+            )
 
         # 1. Leer todos los artefactos intermedios desde MinIO
 
         from airflow.models import Variable
         INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
-        FINAL_PREFIX = Variable.get("FINAL_PREFIX", default_var="data/final")
+        FINAL_PREFIX = Variable.get("FINAL_PREFIX", default_var="final")
         print(f"Leyendo artefactos desde s3://{INTERIM_PREFIX}/ ...")
         ratings = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/ratings_sampled.csv")
         movie_feats = wr.s3.read_csv(f"s3://{INTERIM_PREFIX}/movie_features.csv").set_index("movieId")
@@ -563,14 +598,14 @@ def etl_movielens():
         # 6. Subir splits a MinIO
 
         print(f"Subiendo splits a s3://{FINAL_PREFIX}/ ...")
-        save_numpy_to_s3(X_train, "data", f"{FINAL_PREFIX}/X_train.npy")
-        save_numpy_to_s3(X_test,  "data", f"{FINAL_PREFIX}/X_test.npy")
-        save_numpy_to_s3(y_train, "data", f"{FINAL_PREFIX}/y_train.npy")
-        save_numpy_to_s3(y_test,  "data", f"{FINAL_PREFIX}/y_test.npy")
+        save_numpy_to_s3(X_train, DATA_BUCKET, f"{FINAL_PREFIX}/X_train.npy")
+        save_numpy_to_s3(X_test,  DATA_BUCKET, f"{FINAL_PREFIX}/X_test.npy")
+        save_numpy_to_s3(y_train, DATA_BUCKET, f"{FINAL_PREFIX}/y_train.npy")
+        save_numpy_to_s3(y_test,  DATA_BUCKET, f"{FINAL_PREFIX}/y_test.npy")
 
         # feature_names.txt permite al DAG de entrenamiento loguear los nombres en MLflow
-        boto3.client("s3").put_object(
-            Bucket="data",
+        boto3.client("s3", endpoint_url=endpoint_url).put_object(
+            Bucket=DATA_BUCKET,
             Key=f"{FINAL_PREFIX}/feature_names.txt",
             Body="\n".join(feature_cols).encode(),
         )

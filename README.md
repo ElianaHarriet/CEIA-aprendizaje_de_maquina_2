@@ -20,7 +20,7 @@ El notebook original y la documentación de autoría se encuentran en la carpeta
 La estructura de servicios se basa en Docker compose, el único prerrequisito es instalar [Docker](https://docs.docker.com/engine/install/). Luego,
 
 1. Cloná este repositorio.
-2. Creá las carpetas `airflow/config`, `airflow/dags`, `airflow/logs`, `airflow/plugins`, `airflow/logs`.
+2. Creá las carpetas `airflow/config`, `airflow/dags`, `airflow/logs`, `airflow/plugins`.
 3. Si estás en Linux o MacOS, en el archivo `.env`, reemplazá `AIRFLOW_UID` por el de tu usuario o alguno que consideres oportuno (para tu UID, usá el comando `id -u <username>`). De lo contrario, Airflow deja sus carpetas internas como root y no vas a poder subir DAGs (en `airflow/dags`) o plugins, etc.
 4. En la carpeta raíz de este repositorio, ejecutá:
 

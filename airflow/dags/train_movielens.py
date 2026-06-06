@@ -38,10 +38,8 @@ logica de registro que usa `modelo/src/train.py`.
 default_args = {
     "owner": "CEIA - FIUBA",
     "depends_on_past": False,
-    "schedule_interval": None,
     "retries": 1,
     "retry_delay": datetime.timedelta(minutes=5),
-    "dagrun_timeout": datetime.timedelta(minutes=180),
 }
 
 
@@ -51,6 +49,8 @@ default_args = {
     doc_md=markdown_text,
     tags=["train", "MovieLens", "MLflow"],
     default_args=default_args,
+    schedule=None,
+    dagrun_timeout=datetime.timedelta(minutes=180),
     catchup=False,
 )
 def train_movielens():
@@ -120,6 +120,12 @@ def train_movielens():
         RANDOM_STATE = 42
         N_CORES = max(1, (os.cpu_count() or 2) - 1)
         N_TRIALS = 50
+        endpoint_url = (
+            os.environ.get("AWS_ENDPOINT_URL")
+            or os.environ.get("AWS_ENDPOINT_URL_S3")
+            or "http://s3:9000"
+        )
+        os.environ["AWS_ENDPOINT_URL"] = endpoint_url
 
 
         from airflow.models import Variable
@@ -133,7 +139,7 @@ def train_movielens():
         except KeyError as e:
             raise RuntimeError(f"Falta definir la Variable de Airflow: {e.args[0]}")
 
-        s3_client = boto3.client("s3")
+        s3_client = boto3.client("s3", endpoint_url=endpoint_url)
 
         def load_numpy_from_s3(bucket: str, key: str) -> np.ndarray:
             """

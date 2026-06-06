@@ -42,6 +42,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__API__EXPOSE_CONFIG: 'True'
     AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-minio}
     AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_ACCESS_KEY:-minio123}
+    AWS_ENDPOINT_URL: http://s3:9000
     AWS_ENDPOINT_URL_S3: http://s3:9000
     MLFLOW_S3_ENDPOINT_URL: http://s3:9000
     UV_CACHE_DIR: /tmp/uv-cache
@@ -203,6 +204,7 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-minio}
       - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_ACCESS_KEY:-minio123}
+      - AWS_ENDPOINT_URL=http://s3:9000
       - MLFLOW_S3_ENDPOINT_URL=http://s3:9000
       - AWS_ENDPOINT_URL_S3=http://s3:9000
     command: >
