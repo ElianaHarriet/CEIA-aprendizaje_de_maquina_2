@@ -70,11 +70,7 @@ default_args = {
 )
 def etl_movielens():
 
-    @task.virtualenv(
-        task_id="download_data",
-        requirements=["awswrangler==3.6.0"],
-        system_site_packages=True,
-    )
+    @task(task_id="download_data")
     def download_data():
         """
         Descarga el dataset MovieLens 25M y sube los CSVs necesarios a MinIO.
@@ -169,11 +165,7 @@ def etl_movielens():
         except ReferenceError:
             print("[download_data] ReferenceError suprimido durante cleanup final.")
 
-    @task.virtualenv(
-        task_id="sample_and_save_ratings",
-        requirements=["awswrangler==3.6.0"],
-        system_site_packages=True,
-    )
+    @task(task_id="sample_and_save_ratings")
     def sample_and_save_ratings():
         """
         Samplea un subconjunto de usuarios y ratings y lo persiste en MinIO.
@@ -230,11 +222,7 @@ def etl_movielens():
         wr.s3.to_csv(df=ratings, path=f"s3://{INTERIM_PREFIX}/ratings_sampled.csv", index=False)
         print(f"ratings_sampled.csv guardado en s3://{INTERIM_PREFIX}/")
 
-    @task.virtualenv(
-        task_id="compute_movie_features",
-        requirements=["awswrangler==3.6.0"],
-        system_site_packages=True,
-    )
+    @task(task_id="compute_movie_features")
     def compute_movie_features():
         """
         Calcula features estadísticas por película y las persiste en MinIO.
@@ -309,11 +297,7 @@ def etl_movielens():
         wr.s3.to_csv(df=movie_feats.reset_index(), path=f"s3://{INTERIM_PREFIX}/movie_features.csv", index=False)
         print(f"movie_features.csv guardado: {len(movie_feats):,} películas, {movie_feats.shape[1]} columnas.")
 
-    @task.virtualenv(
-        task_id="compute_genome_pca",
-        requirements=["awswrangler==3.6.0", "scikit-learn==1.3.2"],
-        system_site_packages=True,
-    )
+    @task(task_id="compute_genome_pca")
     def compute_genome_pca():
         """
         Reduce la matriz de genome tags a 20 componentes via PCA.
@@ -382,11 +366,7 @@ def etl_movielens():
         )
         print(f"genome_pca.csv guardado: {len(genome_pca_df):,} películas, {N_GENOME_COMPONENTS} componentes.")
 
-    @task.virtualenv(
-        task_id="compute_user_features",
-        requirements=["awswrangler==3.6.0"],
-        system_site_packages=True,
-    )
+    @task(task_id="compute_user_features")
     def compute_user_features():
         """
         Calcula features estadísticas por usuario y las persiste en MinIO.
@@ -449,15 +429,7 @@ def etl_movielens():
         )
         print(f"user_features.csv guardado: {len(user_feats):,} usuarios.")
 
-    @task.virtualenv(
-        task_id="merge_and_split",
-        requirements=[
-            "awswrangler==3.6.0",
-            "scikit-learn==1.3.2",
-            "numpy>=1.24",
-        ],
-        system_site_packages=True,
-    )
+    @task(task_id="merge_and_split")
     def merge_and_split():
         """
         Combina todos los artefactos intermedios, calcula features de interacción,
