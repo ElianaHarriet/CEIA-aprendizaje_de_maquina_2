@@ -4,3 +4,4 @@ mlflow[extras]~=2.10
 scikit-learn>=1.4
 numpy>=1.26
 pydantic>=2.0
+xgboost>=2.0

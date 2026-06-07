@@ -10,17 +10,14 @@
 - [x] Add default values to Airflow variables in training DAG
 - [x] Add `INTERIM_PREFIX` to Airflow variables
 - [x] Document pipeline execution order, variables, and MinIO structure in `docs/PIPELINE.md`
-
-## In Progress 🔄
-
-- [ ] Wait for training DAG to complete (Optuna 50 trials running)
-- [ ] Verify model registration in MLflow
-- [ ] Restart FastAPI after model registration
-- [ ] Test end-to-end prediction
+- [x] Reduce Optuna trials to 10 and limit n_jobs=1 to prevent OOM
+- [x] Training DAG completed successfully (F1=0.7367, AUC=0.8087)
+- [x] Model registered in MLflow as `movielens-rating-classifier` v1
+- [x] FastAPI loads model and serves predictions
+- [x] All tests passing (10/10)
 
 ## Pending 📋
 
-- [ ] Remove unused DAGs (`asset_producer_dag.py`, `manual_test_parametrization.py`, `test_dag.py`)
-- [ ] Add `.dockerignore` to repo root
+- [ ] Add `.dockerignore` to repo root (already done, verify in git)
 - [ ] Clean up local `modelo/src/mlruns/` (optional, keep for reference)
 - [ ] Verify DAG dependency: ETL must run before Training
