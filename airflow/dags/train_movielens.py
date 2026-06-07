@@ -119,7 +119,7 @@ def train_movielens():
 
         RANDOM_STATE = 42
         N_CORES = max(1, (os.cpu_count() or 2) - 1)
-        N_TRIALS = 50
+        N_TRIALS = 10
         endpoint_url = (
             os.environ.get("AWS_ENDPOINT_URL")
             or os.environ.get("AWS_ENDPOINT_URL_S3")
@@ -195,7 +195,7 @@ def train_movielens():
                     **params,
                     random_state=RANDOM_STATE,
                     eval_metric="logloss",
-                    n_jobs=N_CORES,
+                    n_jobs=1,
                 )
                 scores = cross_val_score(
                     clf,
@@ -203,7 +203,7 @@ def train_movielens():
                     y_train,
                     cv=3,
                     scoring="f1",
-                    n_jobs=N_CORES,
+                    n_jobs=1,
                 )
                 return scores.mean()
 
@@ -249,7 +249,7 @@ def train_movielens():
                 **best_params,
                 random_state=RANDOM_STATE,
                 eval_metric="logloss",
-                n_jobs=N_CORES,
+                n_jobs=1,
             )
             model.fit(x_train, y_train)
 
