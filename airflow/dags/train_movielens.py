@@ -119,7 +119,7 @@ def train_movielens():
 
         RANDOM_STATE = 42
         N_CORES = max(1, (os.cpu_count() or 2) - 1)
-        N_TRIALS = 50
+        N_TRIALS = 10
         endpoint_url = (
             os.environ.get("AWS_ENDPOINT_URL")
             or os.environ.get("AWS_ENDPOINT_URL_S3")
@@ -129,15 +129,11 @@ def train_movielens():
 
 
         from airflow.models import Variable
-        # Elimina defaults hardcodeados: obliga a definir las variables en Airflow
-        try:
-            DATA_BUCKET = Variable.get("DATA_BUCKET")
-            FINAL_PREFIX = Variable.get("FINAL_PREFIX")
-            MLFLOW_URI = Variable.get("MLFLOW_URI")
-            EXPERIMENT_NAME = Variable.get("EXPERIMENT_NAME")
-            REGISTERED_MODEL_NAME = Variable.get("REGISTERED_MODEL_NAME")
-        except KeyError as e:
-            raise RuntimeError(f"Falta definir la Variable de Airflow: {e.args[0]}")
+        DATA_BUCKET = Variable.get("DATA_BUCKET", default_var="data")
+        FINAL_PREFIX = Variable.get("FINAL_PREFIX", default_var="final")
+        MLFLOW_URI = Variable.get("MLFLOW_URI", default_var="http://mlflow:5000")
+        EXPERIMENT_NAME = Variable.get("EXPERIMENT_NAME", default_var="movielens-rating-prediction")
+        REGISTERED_MODEL_NAME = Variable.get("REGISTERED_MODEL_NAME", default_var="movielens-rating-classifier")
 
         s3_client = boto3.client("s3", endpoint_url=endpoint_url)
 
@@ -199,7 +195,7 @@ def train_movielens():
                     **params,
                     random_state=RANDOM_STATE,
                     eval_metric="logloss",
-                    n_jobs=N_CORES,
+                    n_jobs=1,
                 )
                 scores = cross_val_score(
                     clf,
@@ -207,7 +203,7 @@ def train_movielens():
                     y_train,
                     cv=3,
                     scoring="f1",
-                    n_jobs=N_CORES,
+                    n_jobs=1,
                 )
                 return scores.mean()
 
@@ -253,7 +249,7 @@ def train_movielens():
                 **best_params,
                 random_state=RANDOM_STATE,
                 eval_metric="logloss",
-                n_jobs=N_CORES,
+                n_jobs=1,
             )
             model.fit(x_train, y_train)
 

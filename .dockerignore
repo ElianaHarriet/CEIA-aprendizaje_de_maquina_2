@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.venv
+venv
+.env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# MLflow local runs
+modelo/src/mlruns/
+
+# Airflow local logs
+airflow/logs/
+
+# OS
+.DS_Store
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+tests/
