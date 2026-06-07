@@ -129,15 +129,11 @@ def train_movielens():
 
 
         from airflow.models import Variable
-        # Elimina defaults hardcodeados: obliga a definir las variables en Airflow
-        try:
-            DATA_BUCKET = Variable.get("DATA_BUCKET")
-            FINAL_PREFIX = Variable.get("FINAL_PREFIX")
-            MLFLOW_URI = Variable.get("MLFLOW_URI")
-            EXPERIMENT_NAME = Variable.get("EXPERIMENT_NAME")
-            REGISTERED_MODEL_NAME = Variable.get("REGISTERED_MODEL_NAME")
-        except KeyError as e:
-            raise RuntimeError(f"Falta definir la Variable de Airflow: {e.args[0]}")
+        DATA_BUCKET = Variable.get("DATA_BUCKET", default_var="data")
+        FINAL_PREFIX = Variable.get("FINAL_PREFIX", default_var="final")
+        MLFLOW_URI = Variable.get("MLFLOW_URI", default_var="http://mlflow:5000")
+        EXPERIMENT_NAME = Variable.get("EXPERIMENT_NAME", default_var="movielens-rating-prediction")
+        REGISTERED_MODEL_NAME = Variable.get("REGISTERED_MODEL_NAME", default_var="movielens-rating-classifier")
 
         s3_client = boto3.client("s3", endpoint_url=endpoint_url)
 
