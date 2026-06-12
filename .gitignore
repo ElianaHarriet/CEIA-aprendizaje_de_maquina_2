@@ -167,3 +167,10 @@ mlruns/
 # Datos generados (splits, predicciones)
 output/
 *.npy
+
+# opencode plan files
+.opencode/
+.tmp/
+
+# MLflow local SQLite DB
+mlflow.db
