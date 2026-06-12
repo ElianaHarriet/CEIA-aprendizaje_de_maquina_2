@@ -100,7 +100,7 @@ def evaluate_and_promote(
         challenger_f1: F1 score of the challenger model on test set.
     """
     mlflow.set_tracking_uri(mlflow_uri)
-    experiment = mlflow.set_experiment("movielens-rating-prediction")
+    mlflow.set_experiment("movielens-rating-prediction")
 
     client = mlflow.MlflowClient()
 

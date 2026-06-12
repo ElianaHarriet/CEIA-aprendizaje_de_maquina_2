@@ -6,14 +6,15 @@ F1 comparison, and MLflow alias promotion/demotion.
 These are unit tests: all MLflow, boto3, sklearn calls are mocked.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
 
 from src.retrain_core import (
+    evaluate_and_promote,
     load_champion_model,
     load_splits_from_s3,
-    evaluate_and_promote,
 )
 
 
