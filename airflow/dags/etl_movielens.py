@@ -183,42 +183,62 @@ def etl_movielens():
 
         Output: s3://data/interim/ratings_sampled.csv
         """
-        import awswrangler as wr
-        import numpy as np
         import os
+        from io import BytesIO
 
+        import awswrangler as wr
+        import boto3
+        import numpy as np
+        import pandas as pd
 
         from airflow.models import Variable
+        RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
+        N_USERS = int(Variable.get("N_USERS", default_var=20000))
+        N_RATINGS = int(Variable.get("N_RATINGS", default_var=1000000))
+        RAW_PREFIX = Variable.get("RAW_PREFIX", default_var="data/raw")
+        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
         endpoint_url = (
             os.environ.get("AWS_ENDPOINT_URL")
             or os.environ.get("AWS_ENDPOINT_URL_S3")
             or "http://s3:9000"
         )
         os.environ["AWS_ENDPOINT_URL"] = endpoint_url
-        RANDOM_STATE = int(Variable.get("RANDOM_STATE", default_var=42))
-        N_USERS = int(Variable.get("N_USERS", default_var=20000))
-        N_RATINGS = int(Variable.get("N_RATINGS", default_var=1000000))
-        RAW_PREFIX = Variable.get("RAW_PREFIX", default_var="data/raw")
 
-        print(f"Leyendo ratings.csv desde s3://{RAW_PREFIX}/ ...")
-        ratings = wr.s3.read_csv(f"s3://{RAW_PREFIX}/ratings.csv")
-        print(f"  Total ratings crudos: {len(ratings):,}")
+        bucket, key = "data", "raw/ratings.csv"
+        s3 = boto3.client("s3", endpoint_url=endpoint_url)
+        obj = s3.get_object(Bucket=bucket, Key=key)
+        content = obj["Body"].read()
+        print(f"  Descargados {len(content):,} bytes de s3://{RAW_PREFIX}/ratings.csv")
+
+        print("  Pass 1: recolectando userIds únicos...")
+        all_users = set()
+        for i, chunk in enumerate(pd.read_csv(BytesIO(content), chunksize=200000, usecols=["userId"])):
+            all_users.update(chunk["userId"].unique())
+            if i % 5 == 0:
+                print(f"    escaneados {len(all_users):,} usuarios únicos...")
+        print(f"  Total usuarios únicos encontrados: {len(all_users):,}")
 
         rng = np.random.default_rng(RANDOM_STATE)
-        all_users = ratings["userId"].unique()
-        sampled_users = rng.choice(
-            all_users, size=min(N_USERS, len(all_users)), replace=False
-        )
-        ratings = ratings[ratings["userId"].isin(sampled_users)]
+        all_users_arr = np.array(sorted(all_users))
+        sampled_users = set(rng.choice(all_users_arr, size=min(N_USERS, len(all_users_arr)), replace=False))
+        print(f"  Sampleados {len(sampled_users):,} usuarios")
+
+        print("  Pass 2: filtrando ratings por usuarios sampleados...")
+        filtered = []
+        for i, chunk in enumerate(pd.read_csv(BytesIO(content), chunksize=200000)):
+            chunk = chunk[chunk["userId"].isin(sampled_users)]
+            if len(chunk) > 0:
+                filtered.append(chunk)
+            if i % 5 == 0:
+                print(f"    chunk {i + 1} procesado, {sum(len(f) for f in filtered):,} filas acumuladas...")
+        ratings = pd.concat(filtered, ignore_index=True)
+        del filtered
 
         if len(ratings) > N_RATINGS:
             ratings = ratings.sample(n=N_RATINGS, random_state=RANDOM_STATE)
-
         ratings = ratings.reset_index(drop=True)
-        print(f"  Ratings tras sampleo: {len(ratings):,} de {len(all_users):,} usuarios únicos")
+        print(f"  Ratings tras sampleo: {len(ratings):,}")
 
-
-        INTERIM_PREFIX = Variable.get("INTERIM_PREFIX", default_var="data/interim")
         wr.s3.to_csv(df=ratings, path=f"s3://{INTERIM_PREFIX}/ratings_sampled.csv", index=False)
         print(f"ratings_sampled.csv guardado en s3://{INTERIM_PREFIX}/")
 

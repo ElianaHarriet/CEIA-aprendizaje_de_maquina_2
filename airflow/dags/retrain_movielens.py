@@ -115,6 +115,8 @@ def retrain_movielens():
         REGISTERED_MODEL_NAME = Variable.get("REGISTERED_MODEL_NAME", default_var="movielens-rating-classifier")
 
         s3_client = boto3.client("s3", endpoint_url=endpoint_url)
+        mlflow.set_tracking_uri(MLFLOW_URI)
+        mlflow.set_experiment(EXPERIMENT_NAME)
 
         def load_numpy_from_s3(bucket: str, key: str) -> np.ndarray:
             response = s3_client.get_object(Bucket=bucket, Key=key)
@@ -204,9 +206,6 @@ def retrain_movielens():
         challenger_f1 = f1_score(y_test, y_pred)
         log.info("Challenger F1 en test: %.4f", challenger_f1)
 
-        mlflow.set_tracking_uri(MLFLOW_URI)
-        mlflow.set_experiment(EXPERIMENT_NAME)
-
         with mlflow.start_run(run_name="challenger-optuna"):
             mlflow.log_params(best_params)
             mlflow.log_metric("test_f1", challenger_f1)
@@ -219,7 +218,6 @@ def retrain_movielens():
                 calibrated,
                 artifact_path="model",
                 signature=signature,
-                registered_model_name=REGISTERED_MODEL_NAME,
                 input_example=x_train[:5],
             )
 
@@ -283,6 +281,8 @@ def retrain_movielens():
         REGISTERED_MODEL_NAME = Variable.get("REGISTERED_MODEL_NAME", default_var="movielens-rating-classifier")
 
         s3_client = boto3.client("s3", endpoint_url=endpoint_url)
+        mlflow.set_tracking_uri(MLFLOW_URI)
+        mlflow.set_experiment(EXPERIMENT_NAME)
 
         def load_numpy_from_s3(bucket: str, key: str) -> np.ndarray:
             response = s3_client.get_object(Bucket=bucket, Key=key)
@@ -319,9 +319,6 @@ def retrain_movielens():
             log.info("Challenger F1: %.4f", challenger_f1)
         except Exception as e:
             log.warning("No se pudo cargar challenger: %s", e)
-
-        mlflow.set_tracking_uri(MLFLOW_URI)
-        mlflow.set_experiment(EXPERIMENT_NAME)
 
         client = mlflow.MlflowClient()
 
