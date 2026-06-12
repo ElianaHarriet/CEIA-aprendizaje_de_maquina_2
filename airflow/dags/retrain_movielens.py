@@ -239,6 +239,7 @@ def retrain_movielens():
             "mlflow[extras]~=2.10",
             "numpy>=1.26",
             "scikit-learn>=1.4",
+            "xgboost>=2.0",
         ],
         system_site_packages=True,
     )
