@@ -15,6 +15,11 @@
 
 ## DAG Execution Order
 
+### Execution Order
+```
+etl_movielens → train_movielens → retrain_movielens (optional, repeatable)
+```
+
 ### 1. ETL DAG (`etl_movielens`)
 **Trigger**: Manual (no schedule)
 **Tasks** (sequential):
@@ -33,6 +38,48 @@
 1. `train_and_register_model` - Loads splits from MinIO, runs Optuna (50 trials), trains XGBoost, calibrates, registers model in MLflow
 
 **Output**: Registered model `movielens-rating-classifier` in MLflow
+
+### 3. Retrain DAG (`retrain_movielens`)
+**Trigger**: Manual (after Training completes)
+**Tasks**:
+1. `train_challenger` - Loads champion from MLflow, runs Optuna (5 trials centered on champion params), trains XGBoost, calibrates, registers as `challenger`
+2. `evaluate_and_promote` - Loads champion + challenger from MLflow, compares F1 on test set, promotes winner to `champion` alias
+
+**Champion/Challenger Flow**:
+```
+                    ┌──────────────────┐
+                    │  train_movielens │
+                    │  (initial model) │
+                    └────────┬─────────┘
+                             │ champion alias
+                             v
+                    ┌───────────────────┐
+            ┌──────▶│ retrain_movielens │
+            │       └─────────┬─────────┘
+            │                 │
+            │     ┌───────────┴───────────┐
+            │     │                       │
+            │     v                       v
+            │  train_challenger    evaluate_and_promote
+            │     │                       │
+            │     │ challenger alias      │
+            │     │                       │
+            │     └───────────┬───────────┘
+            │                 │
+            │          ┌──────┴──────┐
+            │          │             │
+            │     challenger      champion
+            │     F1 > champ?     F1 >= challenger?
+            │          │             │
+            │          ▼             ▼
+            │     Promote to     Demote
+            │     champion       challenger
+            │          │
+            └──────────┘
+           (next retrain cycle)
+```
+
+**Output**: Updated alias on `movielens-rating-classifier` in MLflow registry
 
 ## Required Airflow Variables
 
@@ -136,7 +183,10 @@ docker exec <airflow-scheduler> airflow dags trigger etl_movielens
 # 4. Wait for ETL to complete, then trigger Training DAG
 docker exec <airflow-scheduler> airflow dags trigger train_movielens
 
-# 5. Verify model in MLflow UI (http://localhost:5001)
+# 5. (Optional) Trigger Retrain DAG to compare champion vs challenger
+docker exec <airflow-scheduler> airflow dags trigger retrain_movielens
+
+# 6. Verify model in MLflow UI (http://localhost:5001)
 
 # 6. Test prediction
 curl -X POST http://localhost:8800/predict \
