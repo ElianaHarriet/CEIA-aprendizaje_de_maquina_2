@@ -230,24 +230,15 @@ def retrain_movielens():
         client.set_registered_model_alias(REGISTERED_MODEL_NAME, "challenger", result.version)
         log.info("Challenger version %s registrada con alias 'challenger'", result.version)
 
-    @task.virtualenv(
-        task_id="evaluate_and_promote",
-        requirements=[
-            "boto3~=1.34",
-            "mlflow[extras]~=2.10",
-            "numpy>=1.26",
-            "scikit-learn>=1.4",
-            "xgboost>=2.0",
-        ],
-        system_site_packages=True,
-    )
+    @task
     def evaluate_and_promote():
         """
         Compara F1 del champion vs challenger y promueve al mejor.
 
         Carga champion y challenger desde MLflow por alias, descarga el test
-        set de MinIO, calcula F1 para ambos, loguea metricas comparativas,
-        y actualiza los alias en MLflow.
+        set de MinIO, calcula F1 para ambos, y delega la promocion/democion
+        a `src.retrain_core.evaluate_and_promote` para mantener la logica
+        centralizada y testeable.
         """
         import io
         import logging
@@ -260,6 +251,7 @@ def retrain_movielens():
         from sklearn.metrics import f1_score
 
         from airflow.models import Variable
+        from src.retrain_core import evaluate_and_promote as _evaluate_and_promote
 
         logging.basicConfig(
             level=logging.INFO,
@@ -295,12 +287,10 @@ def retrain_movielens():
             model_data = client.get_model_version_by_alias(REGISTERED_MODEL_NAME, alias)
             return mlflow.sklearn.load_model(model_data.source)
 
-        # Cargar test set
         x_test = load_numpy_from_s3(DATA_BUCKET, f"{FINAL_PREFIX}/X_test.npy")
         y_test = load_numpy_from_s3(DATA_BUCKET, f"{FINAL_PREFIX}/y_test.npy")
         log.info("Test set cargado: X_test=%s, y_test=%s", x_test.shape, y_test.shape)
 
-        # Cargar champion y calcular F1
         champion_f1 = 0.0
         try:
             champion_model = load_model_by_alias("champion")
@@ -310,7 +300,6 @@ def retrain_movielens():
         except Exception as e:
             log.warning("No se pudo cargar champion: %s", e)
 
-        # Cargar challenger y calcular F1
         challenger_f1 = 0.0
         try:
             challenger_model = load_model_by_alias("challenger")
@@ -320,35 +309,12 @@ def retrain_movielens():
         except Exception as e:
             log.warning("No se pudo cargar challenger: %s", e)
 
-        client = mlflow.MlflowClient()
-
-        winner = "champion"
-        if challenger_f1 > champion_f1:
-            winner = "challenger"
-            log.info("Challenger gana (%.4f > %.4f). Promoviendo...", challenger_f1, champion_f1)
-            challenger_data = client.get_model_version_by_alias(REGISTERED_MODEL_NAME, "challenger")
-            challenger_version = challenger_data.version
-            try:
-                client.delete_registered_model_alias(REGISTERED_MODEL_NAME, "champion")
-            except Exception:
-                pass
-            try:
-                client.delete_registered_model_alias(REGISTERED_MODEL_NAME, "challenger")
-            except Exception:
-                pass
-            client.set_registered_model_alias(REGISTERED_MODEL_NAME, "champion", challenger_version)
-            log.info("Challenger version %s promovido a champion", challenger_version)
-        else:
-            log.info("Champion gana (%.4f >= %.4f). Descartando challenger...", champion_f1, challenger_f1)
-            try:
-                client.delete_registered_model_alias(REGISTERED_MODEL_NAME, "challenger")
-            except Exception:
-                pass
-
-        with mlflow.start_run(run_name="champion-vs-challenger"):
-            mlflow.log_metric("champion_f1", float(champion_f1))
-            mlflow.log_metric("challenger_f1", float(challenger_f1))
-            mlflow.log_param("winner", winner)
+        _evaluate_and_promote(
+            model_name=REGISTERED_MODEL_NAME,
+            mlflow_uri=MLFLOW_URI,
+            champion_f1=champion_f1,
+            challenger_f1=challenger_f1,
+        )
 
     train_challenger() >> evaluate_and_promote()
 
