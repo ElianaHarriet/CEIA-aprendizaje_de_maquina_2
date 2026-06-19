@@ -17,6 +17,7 @@ Flujo de datos:
 import datetime
 
 from airflow.decorators import dag, task
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 markdown_text = """
 ### Training Pipeline - MovieLens
@@ -280,7 +281,13 @@ def train_movielens():
 
             log.info("Run completado. F1=%.4f  AUC=%.4f", metrics["f1"], metrics["auc"])
 
-    train_and_register_model()
+    trigger_retrain = TriggerDagRunOperator(
+        task_id="trigger_retrain_movielens",
+        trigger_dag_id="retrain_movielens",
+        wait_for_completion=False,
+    )
+
+    train_and_register_model() >> trigger_retrain
 
 
 dag = train_movielens()
