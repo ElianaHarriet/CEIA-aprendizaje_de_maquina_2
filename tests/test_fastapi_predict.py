@@ -88,15 +88,15 @@ class TestModelLoading:
     """Tests for MLflow model loading at startup."""
 
     def test_load_model_from_mlflow(self):
-        """load_model() loads from models:/movielens-rating-classifier/latest."""
+        """load_model() loads champion from MLflow model registry."""
         with patch('mlflow.sklearn.load_model') as mock_load:
             mock_model = MagicMock()
             mock_load.return_value = mock_model
-            
+
             from dockerfiles.fastapi.app import load_model
             result = load_model()
-            
-            mock_load.assert_called_once_with("models:/movielens-rating-classifier/latest")
+
+            mock_load.assert_called_once_with("models:/movielens-rating-classifier/champion")
             assert result is mock_model
 
     def test_load_model_raises_on_failure(self):

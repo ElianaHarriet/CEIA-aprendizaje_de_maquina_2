@@ -2,7 +2,27 @@
 
 Todos los cambios importantes de este proyecto serán documentados en este archivo.
 
-## [Unreleased] - 2026-05-31
+## [Unreleased] - 2026-06-19
+
+### Added
+
+* DAG de reentreno (`retrain_movielens.py`) con flujo champion/challenger.
+* Encadenamiento automático de DAGs via `TriggerDagRunOperator` (ETL → Training → Retrain).
+* Tests estructurales con AST para los 3 DAGs (36 tests total).
+* Tests para lógica de champion/challenger en `tests/test_retrain_dag.py`.
+* `airflow/dags/__init__.py` y `tests/__init__.py` para mejor resolución de imports.
+
+### Changed
+
+* FastAPI ahora sirve el modelo `champion` (alias de MLflow) en vez de la versión `latest`.
+* Migración de `@app.on_event("startup")` al patrón `lifespan` (FastAPI moderno).
+* `evaluate_and_promote` en `retrain_movielens` ahora importa desde `src/retrain_core.py`
+  eliminando código duplicado.
+* Documentación actualizada en `docs/PIPELINE.md` y `README.md` con ejemplos de API y tests.
+
+### Fixed
+
+* Typo en `GUIDELINES.md`: URL de MinIO corregida (90000 → 9000).
 
 ### Documentation
 

@@ -5,6 +5,7 @@ Loads calibrated XGBoost model from MLflow and serves predictions via POST /pred
 """
 
 import os
+from contextlib import asynccontextmanager
 from typing import List
 
 import mlflow
@@ -38,7 +39,7 @@ def load_model():
     mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     mlflow.set_tracking_uri(mlflow_uri)
     
-    model_uri = "models:/movielens-rating-classifier/latest"
+    model_uri = "models:/movielens-rating-classifier/champion"
     try:
         return mlflow.sklearn.load_model(model_uri)
     except Exception as e:
@@ -68,20 +69,22 @@ class HealthResponse(BaseModel):
     """Response schema for health check endpoint."""
     status: str
     model_loaded: bool
-    model_uri: str = "models:/movielens-rating-classifier/latest"
+    model_uri: str = "models:/movielens-rating-classifier/champion"
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    """Load model on startup and clean up on shutdown."""
+    initialize_model()
+    yield
 
 
 app = FastAPI(
     title="MovieLens Rating Prediction API",
     description="Predicts whether a user will rate a movie >= 4 stars",
     version="1.0.0",
+    lifespan=lifespan,
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Load model on application startup."""
-    initialize_model()
 
 
 @app.get("/health", response_model=HealthResponse)

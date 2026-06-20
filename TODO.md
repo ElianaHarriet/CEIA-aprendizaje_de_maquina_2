@@ -18,6 +18,4 @@
 
 ## Pending 📋
 
-- [ ] Add `.dockerignore` to repo root (already done, verify in git)
 - [ ] Clean up local `modelo/src/mlruns/` (optional, keep for reference)
-- [ ] Verify DAG dependency: ETL must run before Training

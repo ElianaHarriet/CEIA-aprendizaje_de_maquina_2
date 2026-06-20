@@ -31,6 +31,7 @@ import datetime
 
 
 from airflow.decorators import dag, task
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 markdown_text = """
 ### ETL Pipeline - MovieLens 25M
@@ -606,6 +607,11 @@ def etl_movielens():
     # Encadenamiento secuencial - cada task espera a que la anterior termine exitosamente.
     # compute_movie_features y compute_genome_pca podrían correrse en paralelo en el futuro
     # cambiando: [compute_movie_features(), compute_genome_pca()] >> compute_user_features()
+    trigger_train = TriggerDagRunOperator(
+        task_id="trigger_train_movielens",
+        trigger_dag_id="train_movielens",
+        wait_for_completion=False,
+    )
     (
         download_data()
         >> sample_and_save_ratings()
@@ -613,6 +619,7 @@ def etl_movielens():
         >> compute_genome_pca()
         >> compute_user_features()
         >> merge_and_split()
+        >> trigger_train
     )
 
 

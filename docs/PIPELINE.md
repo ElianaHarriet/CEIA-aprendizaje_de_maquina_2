@@ -21,7 +21,7 @@ etl_movielens → train_movielens → retrain_movielens (optional, repeatable)
 ```
 
 ### 1. ETL DAG (`etl_movielens`)
-**Trigger**: Manual (no schedule)
+**Trigger**: Manual (triggers `train_movielens` upon completion)
 **Tasks** (sequential):
 1. `download_data` - Downloads MovieLens 25M from GroupLens, uploads raw CSVs to `s3://data/raw/`
 2. `sample_and_save_ratings` - Samples users/ratings, saves to `s3://data/interim/ratings_sampled.csv`
@@ -33,14 +33,14 @@ etl_movielens → train_movielens → retrain_movielens (optional, repeatable)
 **Output**: `X_train.npy`, `X_test.npy`, `y_train.npy`, `y_test.npy`, `feature_names.txt`
 
 ### 2. Training DAG (`train_movielens`)
-**Trigger**: Manual (after ETL completes)
+**Trigger**: Auto-triggered by `etl_movielens` via `TriggerDagRunOperator` (also supports manual)
 **Tasks**:
 1. `train_and_register_model` - Loads splits from MinIO, runs Optuna (50 trials), trains XGBoost, calibrates, registers model in MLflow
 
 **Output**: Registered model `movielens-rating-classifier` in MLflow
 
 ### 3. Retrain DAG (`retrain_movielens`)
-**Trigger**: Manual (after Training completes)
+**Trigger**: Auto-triggered by `train_movielens` via `TriggerDagRunOperator` (also supports manual)
 **Tasks**:
 1. `train_challenger` - Loads champion from MLflow, runs Optuna (5 trials centered on champion params), trains XGBoost, calibrates, registers as `challenger`
 2. `evaluate_and_promote` - Loads champion + challenger from MLflow, compares F1 on test set, promotes winner to `champion` alias
@@ -152,7 +152,7 @@ s3://mlflow/
 {
   "status": "healthy",
   "model_loaded": true,
-  "model_uri": "models:/movielens-rating-classifier/latest"
+  "model_uri": "models:/movielens-rating-classifier/champion"
 }
 ```
 
@@ -179,19 +179,17 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 # 3. Trigger ETL DAG in Airflow UI (http://localhost:8080)
 #    Or via CLI:
 docker exec <airflow-scheduler> airflow dags trigger etl_movielens
+# The pipeline auto-chains: ETL triggers Training, Training triggers Retrain
 
-# 4. Wait for ETL to complete, then trigger Training DAG
-docker exec <airflow-scheduler> airflow dags trigger train_movielens
+# 4. Verify model in MLflow UI (http://localhost:5001)
 
-# 5. (Optional) Trigger Retrain DAG to compare champion vs challenger
-docker exec <airflow-scheduler> airflow dags trigger retrain_movielens
-
-# 6. Verify model in MLflow UI (http://localhost:5001)
-
-# 6. Test prediction
+# 5. Test prediction (requires trained model)
 curl -X POST http://localhost:8800/predict \
   -H "Content-Type: application/json" \
   -d '{"features": [0.1, 0.2, ...]}'
+
+# 6. Health check
+curl http://localhost:8800/health
 ```
 
 ## Troubleshooting
