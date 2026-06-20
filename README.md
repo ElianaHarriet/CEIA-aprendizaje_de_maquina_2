@@ -62,3 +62,48 @@ docker compose down --rmi all --volumes
 ```
 
 Nota: si hacés esto, se pierde todo el contenido de los buckets y bases de datos.
+
+## Uso de la API
+
+Una vez que los servicios estén corriendo y el modelo esté entrenado:
+
+```bash
+# Predecir rating (enviar 50 features en el orden de entrenamiento)
+curl -X POST http://localhost:8800/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3.5,2.5,1.2,1995,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,3.8,0.3,4.1,1.0,0.5,0.0]}'
+
+# Health check
+curl http://localhost:8800/health
+
+# Documentación interactiva
+open http://localhost:8800/docs
+```
+
+## Tests
+
+Los tests unitarios se ejecutan localmente sin Docker:
+
+```bash
+# Instalar dependencias
+uv sync
+
+# Ejecutar todos los tests
+uv run pytest tests/ -v
+
+# Tests específicos
+uv run pytest tests/test_fastapi_predict.py -v
+uv run pytest tests/test_etl_dag.py -v
+```
+
+Actualmente hay **36 tests** que cubren: API endpoints, lógica de champion/challenger, y estructura de los 3 DAGs de Airflow.
+
+## Pipeline automático
+
+El pipeline de 3 DAGs se encadena automáticamente:
+
+1. Disparás `etl_movielens` (único trigger manual)
+2. Al terminar, dispara `train_movielens` automáticamente
+3. Al terminar, dispara `retrain_movielens` automáticamente
+
+Cada DAG también se puede disparar manualmente desde la UI de Airflow.

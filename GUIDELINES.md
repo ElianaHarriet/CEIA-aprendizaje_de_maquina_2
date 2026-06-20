@@ -81,7 +81,7 @@ Dado que no estamos utilizando Amazon S3, sino una implementación local de los 
 ```bash
 AWS_ACCESS_KEY_ID=minio   
 AWS_SECRET_ACCESS_KEY=minio123 
-AWS_ENDPOINT_URL_S3=http://localhost:90000
+AWS_ENDPOINT_URL_S3=http://localhost:9000
 ```
 
 MLflow también tiene una variable de entorno que afecta su conexión a los buckets:

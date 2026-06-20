@@ -174,3 +174,6 @@ output/
 
 # MLflow local SQLite DB
 mlflow.db
+
+# Airflow worker logs generated outside docker logs
+airflow_worker_full.log
