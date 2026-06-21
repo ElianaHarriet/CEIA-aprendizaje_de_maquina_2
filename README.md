@@ -80,6 +80,14 @@ curl http://localhost:8800/health
 open http://localhost:8800/docs
 ```
 
+> **Nota:** la API carga el modelo `champion` **una sola vez, al arrancar**. Cuando el
+> retrain promueve un nuevo champion (o lo cambiás manualmente), reiniciá el contenedor
+> para que la API sirva el modelo actualizado:
+>
+> ```bash
+> docker compose restart fastapi
+> ```
+
 ## Tests
 
 Los tests unitarios se ejecutan localmente sin Docker:
@@ -107,3 +115,15 @@ El pipeline de 3 DAGs se encadena automáticamente:
 3. Al terminar, dispara `retrain_movielens` automáticamente
 
 Cada DAG también se puede disparar manualmente desde la UI de Airflow.
+
+> **Importante:** las DAGs se crean **pausadas**. Antes de disparar `etl_movielens`,
+> despausá las 3 (`etl_movielens`, `train_movielens`, `retrain_movielens`) con el
+> toggle de cada DAG en la UI, o por CLI:
+>
+> ```bash
+> docker compose exec airflow-scheduler airflow dags unpause etl_movielens
+> docker compose exec airflow-scheduler airflow dags unpause train_movielens
+> docker compose exec airflow-scheduler airflow dags unpause retrain_movielens
+> ```
+>
+> Si una DAG queda pausada, su run disparado queda en cola y no se ejecuta hasta despausarla.
