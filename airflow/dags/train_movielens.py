@@ -281,6 +281,19 @@ def train_movielens():
 
             log.info("Run completado. F1=%.4f  AUC=%.4f", metrics["f1"], metrics["auc"])
 
+            # Bootstrap del champion: el DAG de retrain y la API requieren un
+            # alias "champion" existente. Si todavia no hay champion (primer
+            # entrenamiento sobre un registry vacio), promovemos esta version.
+            client = mlflow.MlflowClient()
+            try:
+                client.get_model_version_by_alias(REGISTERED_MODEL_NAME, "champion")
+                log.info("Champion ya existe; no se modifica el alias.")
+            except mlflow.exceptions.MlflowException:
+                versions = client.search_model_versions(f"name='{REGISTERED_MODEL_NAME}'")
+                new_version = max(int(v.version) for v in versions)
+                client.set_registered_model_alias(REGISTERED_MODEL_NAME, "champion", new_version)
+                log.info("Sin champion previo: v%s promovida a champion.", new_version)
+
     trigger_retrain = TriggerDagRunOperator(
         task_id="trigger_retrain_movielens",
         trigger_dag_id="retrain_movielens",
