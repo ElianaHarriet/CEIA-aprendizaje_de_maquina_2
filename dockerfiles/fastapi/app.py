@@ -39,7 +39,7 @@ def load_model():
     mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     mlflow.set_tracking_uri(mlflow_uri)
     
-    model_uri = "models:/movielens-rating-classifier/champion"
+    model_uri = "models:/movielens-rating-classifier@champion"
     try:
         return mlflow.sklearn.load_model(model_uri)
     except Exception as e:
@@ -69,7 +69,7 @@ class HealthResponse(BaseModel):
     """Response schema for health check endpoint."""
     status: str
     model_loaded: bool
-    model_uri: str = "models:/movielens-rating-classifier/champion"
+    model_uri: str = "models:/movielens-rating-classifier@champion"
 
 
 @asynccontextmanager
